@@ -1,0 +1,58 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { passportJwtSecret } from 'jwks-rsa';
+import { ConfigService } from '../../config/config.service';
+import { JwtPayload } from './jwt-payload.interface';
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(private configService: ConfigService) {
+    super({
+      secretOrKeyProvider: passportJwtSecret({
+        cache: true,
+        rateLimit: true,
+        jwksRequestsPerMinute: 5,
+        jwksUri: `${configService.AUTH0_DOMAIN}.well-known/jwks.json`,
+      }),
+
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      audience: configService.AUTH0_AUDIENCE,
+      issuer: `${configService.AUTH0_DOMAIN}`,
+      algorithms: ['RS256'],
+    });
+  }
+
+  validate(payload: JwtPayload): JwtPayload {
+    const minimumScope = ['openid', 'profile', 'email'];
+
+    if (
+      payload.scope.split(' ')
+        .filter(scope => minimumScope.indexOf(scope) > -1).length !== 3
+    ) {
+      throw new UnauthorizedException(
+        'JWT does not possess the required scope (`openid profile email`).',
+      );
+    }
+
+    return payload;
+  }
+}
+
+
+export interface JwtPayload {
+  /** Issuer (who created and signed this token) */
+  iss?: string;
+  /** Subject (whom the token refers to) */
+  sub?: string;
+  /** Audience (who or what the token is intended for) */
+  aud?: string[];
+  /** Issued at (seconds since Unix epoch) */
+  iat?: number;
+  /** Expiration time (seconds since Unix epoch) */
+  exp?: number;
+  /** Authorization party (the party to which this token was issued) */
+  azp?: string;
+  /** Token scope (what the token has access to) */
+  scope?: string;
+}
+

@@ -1,0 +1,12 @@
+bloc is  state management library used to separate presentatino from buisness logic
+
+
+----States-------|
+   (reducers)    |
+
+UI ===========> Bloc ========> data
+|		 ^
+|		 |
+|		 |
+|-----Events-----|
+     (actions)

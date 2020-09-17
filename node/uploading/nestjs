@@ -1,0 +1,42 @@
+import { Param } from  '@nestjs/common';
+import { UseInterceptors, FileInterceptor, UploadedFile } from  '@nestjs/common';
+import { diskStorage } from  'multer';
+import { extname } from  'path';    
+
+@Post(':userid/avatar')
+    @UseInterceptors(FileInterceptor('file',
+      {
+        storage: diskStorage({
+          destination: './avatars', 
+          filename: (req, file, cb) => {
+          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('')
+          return cb(null, `${randomName}${extname(file.originalname)}`)
+        }
+        })
+      }
+    )
+    )
+    uploadAvatar(@Param('userid') userId, @UploadedFile() file) {
+      this.userService.setAvatar(Number(userId), `${this.SERVER_URL}${file.path}`);
+    }
+
+
+// serving static files
+
+  @Get('avatars/:fileId')
+  async serveAvatar(@Param('fileId') fileId, @Res() res): Promise<any> {
+    res.sendFile(fileId, { root: 'avatars'});
+  }
+
+
+
+    // Create a form data object
+    let formData = new FormData();
+
+    // Optional, if you want to use a DTO on your server to grab this data
+    formData.append('title', data.title);
+
+    // Append each of the files
+    files.forEach((file) => {
+      formData.append('files[]', file.rawFile, file.name);
+    });
